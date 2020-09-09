@@ -6,7 +6,8 @@
 
 #define CLIENT_ADDRESS 2
 #define SERVER_ADDRESS 1
-
+#define ENABLE12 4
+#define ENABLE5 5
 /*Satelit
    connetions:
    tx - 12
@@ -16,13 +17,13 @@
 */
 float iREF = 1.1; //internal reference cal factor
 
-RH_ASK driver(2000);
+RH_ASK driver(4000);
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
 float fReadVcc();
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600*2);
   //manager.setRetries(10);
   manager.setTimeout(500);
   if (!manager.init())
@@ -30,6 +31,10 @@ void setup() {
   pinMode(13, OUTPUT);
   Wire.begin();
   Serial.println("start");
+  pinMode(ENABLE12, OUTPUT);
+  pinMode(ENABLE5, OUTPUT);
+  digitalWrite(ENABLE12, LOW);
+  digitalWrite(ENABLE5, LOW);
 }
 
 uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
@@ -64,8 +69,10 @@ void loop() {
 
   strcat(data, ",t");
   dtostrf(t, 3, 1, temp);
-  strcat(data, temp);
-
+  strcat(data, temp);  
+  digitalWrite(ENABLE12, HIGH);
+  digitalWrite(ENABLE5, HIGH);
+  delay(100);
   Serial.println("Sending to ask_reliable_datagram_server");
 
   // Send a message to manager_server
@@ -97,7 +104,10 @@ void loop() {
   }
   else
     Serial.println("sendtoWait failed");
-  delay(5000 + ((analogRead(A1) & 0x03) << 7));
+  delay(100);
+  digitalWrite(ENABLE12, LOW);
+  digitalWrite(ENABLE5, LOW);
+  delay(1000 + ((analogRead(A1) & 0x03) << 7));
 }
 
 float fReadVcc() {
