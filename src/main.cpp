@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
+#include "..\..\hygro_client_eeh\lib\Low-Power-master\LowPower.h"
 #include "..\..\hygro_client_eeh\lib\RadioHead-master\RHReliableDatagram.h"
 #include "..\..\hygro_client_eeh\lib\RadioHead-master\RH_ASK.h"
 
@@ -39,6 +40,7 @@ void setup() {
 
 uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
 bool state = 0;
+uint16_t low_power_sleep = 0;
 
 void loop() {
   unsigned char i2cResponse[5];
@@ -88,11 +90,11 @@ void loop() {
       Serial.print(": ");
       Serial.println((char*)buf);
       if (state == 0) {
-        digitalWrite(13, 1);
+        //digitalWrite(13, 1);
         state = 1;
       }
       else {
-        digitalWrite(13, 0);
+        //digitalWrite(13, 0);
         state = 0;
       }
       Serial.println(state);
@@ -102,12 +104,16 @@ void loop() {
       Serial.println("No reply, is ask_reliable_datagram_server running?");
     }
   }
-  else
+  else{
     Serial.println("sendtoWait failed");
-  delay(100);
+    delay(1000 + ((analogRead(A1) & 0x03) << 7));
+  }
   digitalWrite(ENABLE12, LOW);
   digitalWrite(ENABLE5, LOW);
-  delay(1000 + ((analogRead(A1) & 0x03) << 7));
+  for(;low_power_sleep<20;low_power_sleep++){
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+  }
+  low_power_sleep = 0;
 }
 
 float fReadVcc() {
