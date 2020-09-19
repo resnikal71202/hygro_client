@@ -34,6 +34,8 @@ void setup() {
   Serial.println("start");
   pinMode(ENABLE12, OUTPUT);
   pinMode(ENABLE5, OUTPUT);
+  analogReference(INTERNAL); 
+  pinMode(A1, INPUT);
   digitalWrite(ENABLE12, LOW);
   digitalWrite(ENABLE5, LOW);
 }
@@ -59,6 +61,9 @@ void loop() {
   rhb = i2cResponse[3] << 8 | i2cResponse[4];
   double rh = -6.0 + 125 * (rhb / 65535.0);
 
+  unsigned double ah;
+  ah=(6.112* 2.718^(17.67t/(t+243.5))rh*2.1674)/(273.15+t);
+
   char data[24] = "";
   char temp[5] = "v";
   strcpy(data, temp);
@@ -71,7 +76,12 @@ void loop() {
 
   strcat(data, ",t");
   dtostrf(t, 3, 1, temp);
-  strcat(data, temp);  
+  strcat(data, temp); 
+
+  strcat(data, ",a");
+  dtostrf(ah,3,2,temp);
+  strcat(data,temp);
+
   digitalWrite(ENABLE12, HIGH);
   digitalWrite(ENABLE5, HIGH);
   delay(100);
@@ -90,11 +100,11 @@ void loop() {
       Serial.print(": ");
       Serial.println((char*)buf);
       if (state == 0) {
-        //digitalWrite(13, 1);
+        digitalWrite(13, 1);
         state = 1;
       }
       else {
-        //digitalWrite(13, 0);
+        digitalWrite(13, 0);
         state = 0;
       }
       Serial.println(state);
@@ -110,19 +120,31 @@ void loop() {
   }
   digitalWrite(ENABLE12, LOW);
   digitalWrite(ENABLE5, LOW);
-  for(;low_power_sleep<20;low_power_sleep++){
+  delay(100);
+  for(;low_power_sleep<2;low_power_sleep++){
     LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
   }
   low_power_sleep = 0;
 }
 
 float fReadVcc() {
-  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-  delay(5); //delay for 5 milliseconds
-  ADCSRA |= _BV(ADSC); // Start ADC conversion
-  while (bit_is_set(ADCSRA, ADSC)); //wait until conversion is complete
-  int result = ADCL; //get first half of result
-  result |= ADCH << 8; //get rest of the result
-  float batVolt = (iREF / result) * 1024; //Use the known iRef to calculate battery voltage + resistance
-  return batVolt;
+  // ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  // delay(5); //delay for 5 milliseconds
+  // ADCSRA |= _BV(ADSC); // Start ADC conversion
+  // while (bit_is_set(ADCSRA, ADSC)); //wait until conversion is complete
+  // int result = ADCL; //get first half of result
+  // result |= ADCH << 8; //get rest of the result
+  // float batVolt = (iREF / result) * 1024; //Use the known iRef to calculate battery voltage + resistance
+  // return batVolt;
+    digitalWrite(ENABLE5, HIGH);
+    analogReference(INTERNAL); 
+    pinMode(A1, INPUT);
+    delay(100);
+    uint8_t batraw = analogRead(A1);
+    digitalWrite(ENABLE5, LOW);
+    float batVolt = map(batraw, 0,1024,0,1100)/100.0;
+    batVolt = batVolt;
+    Serial.println(batraw);
+    Serial.println(batVolt);
+    return batVolt;
 }
