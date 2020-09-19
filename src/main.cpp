@@ -78,7 +78,7 @@ void loop() {
   dtostrf(t, 3, 1, temp);
   strcat(data, temp); 
 
-  strcat(data, ",a");
+  strcat(data, ",f");
   dtostrf(ah,3,2,temp);
   strcat(data,temp);
 
