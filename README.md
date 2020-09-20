@@ -5,5 +5,5 @@ The data can be found here:
 * https://github.com/resnikal71202/hygro_server
 ## needed gits
 * https://github.com/adafruit/RadioHead
-* https://github.com/greiman/SSD1306Ascii
+* https://github.com/rocketscream/Low-Power
 ## to-do list:
