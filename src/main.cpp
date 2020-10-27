@@ -6,9 +6,10 @@
 #include "..\..\hygro_client_eeh\lib\RadioHead-master\RH_ASK.h"
 
 #define CLIENT_ADDRESS 2
+
 #define SERVER_ADDRESS 1
-#define ENABLE12 4
-#define ENABLE5 5
+#define ENABLERXTX 2
+
 /*Satelit
    connetions:
    tx - 12
@@ -32,12 +33,12 @@ void setup() {
   pinMode(13, OUTPUT);
   Wire.begin();
   Serial.println("start");
-  pinMode(ENABLE12, OUTPUT);
-  pinMode(ENABLE5, OUTPUT);
+  pinMode(ENABLERXTX, OUTPUT);
+  pinMode(13, OUTPUT);
   analogReference(INTERNAL); 
-  pinMode(A1, INPUT);
-  digitalWrite(ENABLE12, LOW);
-  digitalWrite(ENABLE5, LOW);
+  //pinMode(A1, INPUT);
+  digitalWrite(ENABLERXTX, LOW);
+  digitalWrite(13, LOW);
 }
 
 uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
@@ -61,8 +62,8 @@ void loop() {
   rhb = i2cResponse[3] << 8 | i2cResponse[4];
   double rh = -6.0 + 125 * (rhb / 65535.0);
 
-  unsigned double ah;
-  ah=(6.112* 2.718^(17.67t/(t+243.5))rh*2.1674)/(273.15+t);
+  double ah;
+  ah = (6.112 * exp(17.67 * t / (t + 243.5)) * rh * 2.1674) / (273.15 + t);
 
   char data[24] = "";
   char temp[5] = "v";
@@ -82,11 +83,10 @@ void loop() {
   dtostrf(ah,3,2,temp);
   strcat(data,temp);
 
-  digitalWrite(ENABLE12, HIGH);
-  digitalWrite(ENABLE5, HIGH);
+  digitalWrite(ENABLERXTX, HIGH);
+  digitalWrite(13, HIGH);
   delay(100);
   Serial.println("Sending to ask_reliable_datagram_server");
-
   // Send a message to manager_server
   if (manager.sendtoWait((uint8_t *)data, sizeof(data), SERVER_ADDRESS))
   {
@@ -116,10 +116,11 @@ void loop() {
   }
   else{
     Serial.println("sendtoWait failed");
-    delay(1000 + ((analogRead(A1) & 0x03) << 7));
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+    delay((analogRead(A1) & 0x03) << 7);
   }
-  digitalWrite(ENABLE12, LOW);
-  digitalWrite(ENABLE5, LOW);
+  digitalWrite(ENABLERXTX, LOW);
+  digitalWrite(13, LOW);
   delay(100);
   for(;low_power_sleep<2;low_power_sleep++){
     LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
@@ -128,23 +129,23 @@ void loop() {
 }
 
 float fReadVcc() {
-  // ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-  // delay(5); //delay for 5 milliseconds
-  // ADCSRA |= _BV(ADSC); // Start ADC conversion
-  // while (bit_is_set(ADCSRA, ADSC)); //wait until conversion is complete
-  // int result = ADCL; //get first half of result
-  // result |= ADCH << 8; //get rest of the result
-  // float batVolt = (iREF / result) * 1024; //Use the known iRef to calculate battery voltage + resistance
-  // return batVolt;
-    digitalWrite(ENABLE5, HIGH);
-    analogReference(INTERNAL); 
-    pinMode(A1, INPUT);
-    delay(100);
-    uint8_t batraw = analogRead(A1);
-    digitalWrite(ENABLE5, LOW);
-    float batVolt = map(batraw, 0,1024,0,1100)/100.0;
-    batVolt = batVolt;
-    Serial.println(batraw);
-    Serial.println(batVolt);
-    return batVolt;
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  delay(5); //delay for 5 milliseconds
+  ADCSRA |= _BV(ADSC); // Start ADC conversion
+  while (bit_is_set(ADCSRA, ADSC)); //wait until conversion is complete
+  int result = ADCL; //get first half of result
+  result |= ADCH << 8; //get rest of the result
+  float batVolt = (iREF / result) * 1024; //Use the known iRef to calculate battery voltage + resistance
+  return batVolt;
+    // digitalWrite(ENABLE5, HIGH);
+    // analogReference(INTERNAL); 
+    // pinMode(A1, INPUT);
+    // delay(100);
+    // uint8_t batraw = analogRead(A1);
+    // digitalWrite(ENABLE5, LOW);
+    // float batVolt = map(batraw, 0,1024,0,1100)/100.0;
+    // batVolt = batVolt;
+    // Serial.println(batraw);
+    // Serial.println(batVolt);
+    // return batVolt;
 }
